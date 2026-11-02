@@ -1,0 +1,162 @@
+name: Update OpenAPI Spec
+
+on:
+  schedule:
+    - cron: "0 9 * * *" # Every day at 9:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-spec
+  cancel-in-progress: true
+
+jobs:
+  update-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - name: Snapshot previous spec
+        id: snapshot
+        run: |
+          if [ -f spec/openapi.json ]; then
+            cp spec/openapi.json "$GITHUB_WORKSPACE/.previous-spec.json"
+            echo "has_previous=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_previous=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Downloads Mouser's V1 and V2 Swagger 2.0 specs, converts each to
+      # OpenAPI 3.0 and merges them into spec/openapi.json.
+      - name: Download and merge latest specs
+        run: npm run spec:update
+
+      - name: Validate spec
+        id: lint
+        continue-on-error: true
+        run: npx -y @redocly/cli@2.28.1 lint spec/openapi.json --extends=spec --format=github-actions
+
+      # Fails when Mouser adds an operation with no SDK name in
+      # openapi-ts.patch.ts. The PR is still opened (with the spec changes and
+      # the error) so the new operation gets named.
+      - name: Regenerate client from updated spec
+        id: generate
+        continue-on-error: true
+        run: |
+          npm run generate 2> "$RUNNER_TEMP/generate-error.log"
+          npm run fix
+
+      - name: Restore client after failed generation
+        if: steps.generate.outcome == 'failure'
+        run: |
+          git checkout -- src/client
+          git clean -fd src/client
+
+      - name: Generate API changelog
+        id: changelog
+        if: steps.snapshot.outputs.has_previous == 'true'
+        uses: oasdiff/oasdiff-action/changelog@514e22ec2f1d1654fb78ac3bb7dc00d8f3c6c4d9 # v0.1.19
+        with:
+          base: .previous-spec.json
+          revision: spec/openapi.json
+          format: markdown
+          # Skip the oasdiff.com upload/review-link — keeps specs in CI and
+          # avoids the broken review annotation on schedule/dispatch runs.
+          review: false
+        continue-on-error: true
+
+      - name: Detect breaking changes
+        id: breaking
+        if: steps.snapshot.outputs.has_previous == 'true'
+        uses: oasdiff/oasdiff-action/breaking@514e22ec2f1d1654fb78ac3bb7dc00d8f3c6c4d9 # v0.1.19
+        with:
+          base: .previous-spec.json
+          revision: spec/openapi.json
+          # Skip the oasdiff.com upload/review-link — keeps specs in CI and
+          # avoids the broken review annotation on schedule/dispatch runs.
+          review: false
+
+      - name: Build PR metadata
+        env:
+          CHANGELOG: ${{ steps.changelog.outputs.changelog }}
+          BREAKING: ${{ steps.breaking.outputs.breaking }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          GENERATE_OUTCOME: ${{ steps.generate.outcome }}
+        run: |
+          # shellcheck disable=SC2016 # backticks below are literal Markdown
+          {
+            echo 'PR_BODY<<EOF_9f3a7b2c'
+            if [ "$GENERATE_OUTCOME" = "failure" ]; then
+              echo '## ❌ SDK generation failed'
+              echo ''
+              echo 'This PR contains only the spec changes; `src/client` was not regenerated.'
+              echo 'Add the new operation to `OPERATION_NAMES` in `openapi-ts.patch.ts`, then run `npm run generate && npm run fix` and commit.'
+              echo ''
+              echo '```'
+              tail -n 40 "$RUNNER_TEMP/generate-error.log"
+              echo '```'
+              echo ''
+            fi
+            echo 'The upstream Mouser API OpenAPI specifications have changed.'
+            echo ''
+            echo 'This PR updates `spec/` (V1 and V2 converted to OpenAPI 3.0, merged into `spec/openapi.json`) and regenerates the client in `src/client`.'
+            echo ''
+            if [ "$LINT_OUTCOME" = "success" ]; then
+              echo '**Spec validation:** Passed'
+            else
+              echo '**Spec validation:** Failed — review lint output in the [workflow run](https://github.com/bradford-tech/mouser-sdk/actions).'
+            fi
+            if [ -n "$BREAKING" ]; then
+              echo ''
+              echo '## ⚠️ Breaking changes detected'
+              echo ''
+              printf '%s\n' "$BREAKING"
+              echo ''
+              echo 'Consider a major version bump on the next SDK release.'
+            fi
+            if [ -n "$CHANGELOG" ]; then
+              echo ''
+              echo '<details><summary>Full API changelog</summary>'
+              echo ''
+              printf '%s\n' "$CHANGELOG"
+              echo ''
+              echo '</details>'
+            fi
+            echo 'EOF_9f3a7b2c'
+          } >> "$GITHUB_ENV"
+
+          {
+            echo 'PR_LABELS<<LABELS_EOF'
+            echo 'automated'
+            if [ -n "$BREAKING" ]; then echo 'breaking-change'; fi
+            if [ "$GENERATE_OUTCOME" = "failure" ]; then echo 'needs-rename'; fi
+            echo 'LABELS_EOF'
+          } >> "$GITHUB_ENV"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        with:
+          commit-message: "fix(spec): update Mouser OpenAPI spec"
+          title: "fix(spec): update Mouser OpenAPI spec"
+          body: ${{ env.PR_BODY }}
+          branch: update-openapi-spec
+          delete-branch: true
+          add-paths: |
+            spec
+            src/client
+          labels: ${{ env.PR_LABELS }}
+          assignees: sbs44
+          reviewers: sbs44
+          sign-commits: true

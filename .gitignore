@@ -13,3 +13,6 @@ dist
 
 # local secrets
 .env
+
+# hey-api crash logs
+openapi-ts-error-*.log
