@@ -56,19 +56,21 @@ setApiKeys({ search: () => loadKeyFromVault("mouser-search") });
 
 A key you leave out keeps falling back to its environment variable. Each `setApiKeys` call replaces the previous one.
 
+If an operation needs a key that was never supplied, no request is sent: the call returns `{ error }` (or throws with `throwOnError: true`) with a message such as `No Mouser order API key: set MOUSER_ORDER_API_KEY, or pass { order } to setApiKeys() or createMouser().`
+
 **Isolated clients:** for multi-tenant servers, concurrent requests with different keys, or test isolation, create independent clients and pass one per call.
 
 ```ts
 import { createMouser, searchByKeyword } from "@bradford-tech/mouser-sdk";
 
-const mouser = createMouser({ searchApiKey: "tenant-search-key" });
+const mouser = createMouser({ search: "tenant-search-key" });
 const { data } = await searchByKeyword({
   client: mouser,
   body: { SearchByKeywordRequest: { keyword: "LM358" } },
 });
 ```
 
-Isolated clients never read the environment: a key you don't pass is simply absent, so a client created with only a search key sends no key on cart and order calls instead of borrowing the process-wide order key.
+Isolated clients never read the environment: a client created with only a search key returns a missing-key error for cart and order calls instead of borrowing the process-wide order key.
 
 Request your keys from the [Mouser API hub](https://www.mouser.com/api-hub/).
 

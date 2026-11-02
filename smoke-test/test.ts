@@ -16,7 +16,7 @@ import {
 // Verify the public auth helpers resolve with correct types
 setApiKeys({ search: "search-key", order: () => "order-key" });
 const _key: KeySource = async () => "key";
-const mouser = createMouser({ searchApiKey: "search-key" });
+const mouser = createMouser({ search: "search-key" });
 
 // Verify SDK functions are callable with correct types
 const _search: Promise<unknown> = searchByKeyword({

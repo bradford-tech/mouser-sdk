@@ -4,8 +4,8 @@ import {
   createClient,
   createConfig,
 } from "./client/client/index.js";
-import { readApiKeysFromEnv } from "./env.js";
-import { type KeySource, keyResolver } from "./keys.js";
+import { envKeys } from "./env.js";
+import { keyResolver, type MouserKeys } from "./keys.js";
 
 const BASE_URL = "https://api.mouser.com";
 
@@ -17,16 +17,15 @@ const BASE_URL = "https://api.mouser.com";
  *
  * A key you omit keeps falling back to its environment variable
  * (`MOUSER_SEARCH_API_KEY` / `MOUSER_ORDER_API_KEY`). Each call replaces the
- * previous configuration entirely.
+ * previous configuration entirely. A call that needs a key nobody supplied
+ * rejects with an error naming the missing key.
  */
-export function setApiKeys(keys: {
-  search?: KeySource;
-  order?: KeySource;
-}): void {
+export function setApiKeys(keys: MouserKeys): void {
+  const env = envKeys();
   client.setConfig({
     auth: keyResolver({
-      search: keys.search ?? (() => readApiKeysFromEnv().search),
-      order: keys.order ?? (() => readApiKeysFromEnv().order),
+      search: keys.search ?? env.search,
+      order: keys.order ?? env.order,
     }),
   });
 }
@@ -37,19 +36,17 @@ export function setApiKeys(keys: {
  * anywhere mutating the shared default client is unsafe. Pass the returned
  * client per call: `searchByKeyword({ client: mouser, body })`.
  *
- * Environment variables are never consulted: a key you omit is simply absent,
- * so a client created with only `searchApiKey` sends no key on cart and order
- * calls rather than borrowing the process-wide order key.
+ * Environment variables are never consulted: a client created with only
+ * `search` rejects cart and order calls with a missing-key error rather than
+ * borrowing the process-wide order key.
  */
-export function createMouser(opts: {
-  searchApiKey?: KeySource;
-  orderApiKey?: KeySource;
-  baseUrl?: string;
-}): Client {
+export function createMouser(
+  opts: MouserKeys & { baseUrl?: string } = {},
+): Client {
   return createClient(
     createConfig({
       baseUrl: opts.baseUrl ?? BASE_URL,
-      auth: keyResolver({ search: opts.searchApiKey, order: opts.orderApiKey }),
+      auth: keyResolver({ search: opts.search, order: opts.order }),
     }),
   );
 }

@@ -24,6 +24,7 @@ test("returns Mouser date strings unchanged", async () => {
   });
   const { data } = await sdk.searchByKeyword({
     fetch,
+    auth: "S",
     body: { SearchByKeywordRequest: { keyword: "x" } },
   });
   assert.equal(

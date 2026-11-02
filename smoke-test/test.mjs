@@ -27,7 +27,7 @@ assert.equal(
   "createMouser should be a function",
 );
 assert.equal(
-  typeof sdk.createMouser({ searchApiKey: "test-key" }).post,
+  typeof sdk.createMouser({ search: "test-key" }).post,
   "function",
   "createMouser(...) should return a client",
 );

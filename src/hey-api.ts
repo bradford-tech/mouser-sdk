@@ -1,5 +1,5 @@
 import type { CreateClientConfig } from "./client/client.gen.js";
-import { readApiKeysFromEnv } from "./env.js";
+import { envKeys } from "./env.js";
 import { keyResolver } from "./keys.js";
 
 /**
@@ -12,8 +12,5 @@ import { keyResolver } from "./keys.js";
  */
 export const createClientConfig: CreateClientConfig = (config) => ({
   ...config,
-  auth: keyResolver({
-    search: () => readApiKeysFromEnv().search,
-    order: () => readApiKeysFromEnv().order,
-  }),
+  auth: keyResolver(envKeys()),
 });

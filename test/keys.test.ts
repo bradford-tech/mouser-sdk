@@ -5,6 +5,11 @@ import { keyResolver } from "../src/keys.js";
 const search = { type: "apiKey", key: "searchApiKey" } as const;
 const order = { type: "apiKey", key: "orderApiKey" } as const;
 
+const MISSING_ORDER =
+  /^No Mouser order API key: set MOUSER_ORDER_API_KEY, or pass \{ order \} to setApiKeys\(\) or createMouser\(\)\.$/;
+const MISSING_SEARCH =
+  /^No Mouser search API key: set MOUSER_SEARCH_API_KEY, or pass \{ search \} to setApiKeys\(\) or createMouser\(\)\.$/;
+
 test("resolves each scheme to its own key", async () => {
   const resolve = keyResolver({ search: "S", order: "O" });
   assert.equal(await resolve(search), "S");
@@ -26,7 +31,21 @@ test("awaits resolver functions", async () => {
   assert.equal(await resolve(order), "O2");
 });
 
-test("never substitutes the search key for a missing order key", async () => {
+test("throws a clear error for a missing order key, never substituting the search key", async () => {
   const resolve = keyResolver({ search: "S" });
-  assert.equal(await resolve(order), undefined);
+  await assert.rejects(resolve(order), { message: MISSING_ORDER });
+});
+
+test("throws a clear error for a missing search key", async () => {
+  const resolve = keyResolver({ order: "O" });
+  await assert.rejects(resolve(search), { message: MISSING_SEARCH });
+});
+
+test("treats empty or unresolved keys as missing", async () => {
+  await assert.rejects(keyResolver({ order: "" })(order), {
+    message: MISSING_ORDER,
+  });
+  await assert.rejects(keyResolver({ order: async () => undefined })(order), {
+    message: MISSING_ORDER,
+  });
 });

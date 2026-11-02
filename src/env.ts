@@ -1,3 +1,5 @@
+import type { MouserKeys } from "./keys.js";
+
 interface EnvScope {
   process?: { env?: Record<string, string | undefined> };
 }
@@ -18,5 +20,17 @@ export function readApiKeysFromEnv(
   return {
     search: env?.MOUSER_SEARCH_API_KEY,
     order: env?.MOUSER_ORDER_API_KEY,
+  };
+}
+
+/**
+ * Key sources backed by the environment, read lazily on every request so a
+ * `.env` loaded after import still applies. The single definition of the
+ * env-var fallback used by the default client and `setApiKeys()`.
+ */
+export function envKeys(): Required<MouserKeys> {
+  return {
+    search: () => readApiKeysFromEnv().search,
+    order: () => readApiKeysFromEnv().order,
   };
 }

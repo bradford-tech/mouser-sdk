@@ -58,25 +58,31 @@ test("setApiKeys replaces the previous configuration", async () => {
   setApiKeys({ search: "S3" });
   await searchByKeyword({ fetch, body: searchBody });
   assert.equal(sentApiKey(requests), "S3");
-  await getCart({ fetch, query: { cartKey: "k" } });
-  assert.equal(sentApiKey(requests), null);
+  const { error } = await getCart({ fetch, query: { cartKey: "k" } });
+  assert.match(String(error), /No Mouser order API key/);
+  assert.equal(requests.length, 1, "the cart request must not be sent");
 });
 
 test("createMouser ignores env", async () => {
   const { fetch, requests } = captureFetch();
   process.env.MOUSER_SEARCH_API_KEY = "envS";
   process.env.MOUSER_ORDER_API_KEY = "envO";
-  const mouser = createMouser({ searchApiKey: "T" });
+  const mouser = createMouser({ search: "T" });
   await searchByKeyword({ client: mouser, fetch, body: searchBody });
   assert.equal(sentApiKey(requests), "T");
-  await getCart({ client: mouser, fetch, query: { cartKey: "k" } });
-  assert.equal(sentApiKey(requests), null);
+  const { error } = await getCart({
+    client: mouser,
+    fetch,
+    query: { cartKey: "k" },
+  });
+  assert.match(String(error), /No Mouser order API key/);
+  assert.equal(requests.length, 1, "the cart request must not be sent");
 });
 
 test("createMouser instances are isolated", async () => {
   const { fetch, requests } = captureFetch();
-  const a = createMouser({ searchApiKey: "A" });
-  const b = createMouser({ searchApiKey: "B" });
+  const a = createMouser({ search: "A" });
+  const b = createMouser({ search: "B" });
   setApiKeys({ search: "D" });
   await searchByKeyword({ client: a, fetch, body: searchBody });
   assert.equal(sentApiKey(requests), "A");
@@ -88,7 +94,7 @@ test("createMouser instances are isolated", async () => {
 
 test("createMouser defaults to the Mouser base URL", async () => {
   const { fetch, requests } = captureFetch();
-  const mouser = createMouser({ searchApiKey: "T" });
+  const mouser = createMouser({ search: "T" });
   await searchByKeyword({ client: mouser, fetch, body: searchBody });
   assert.equal(requests.length, 1);
   assert.ok(requests[0]?.url.startsWith("https://api.mouser.com/"));
@@ -98,10 +104,19 @@ test("createMouser defaults to the Mouser base URL", async () => {
 test("createMouser honours baseUrl", async () => {
   const { fetch, requests } = captureFetch();
   const mouser = createMouser({
-    searchApiKey: "T",
+    search: "T",
     baseUrl: "https://proxy.example",
   });
   await searchByKeyword({ client: mouser, fetch, body: searchBody });
   assert.equal(requests.length, 1);
   assert.ok(requests[0]?.url.startsWith("https://proxy.example/"));
+});
+
+test("a missing key throws with throwOnError", async () => {
+  const { fetch, requests } = captureFetch();
+  await assert.rejects(
+    getCart({ fetch, query: { cartKey: "k" }, throwOnError: true }),
+    { message: /^No Mouser order API key: set MOUSER_ORDER_API_KEY/ },
+  );
+  assert.equal(requests.length, 0);
 });
