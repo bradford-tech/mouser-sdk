@@ -1,0 +1,10 @@
+{
+  "inputs": [
+    {
+      "inputFile": "./v1.json",
+      "operationSelection": { "excludePaths": [{ "path": "/api/v1/search/*" }] }
+    },
+    { "inputFile": "./v2.json" }
+  ],
+  "output": "./openapi.json"
+}

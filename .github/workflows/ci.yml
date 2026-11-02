@@ -1,0 +1,63 @@
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+name: ci
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: lts/*
+          cache: npm
+          cache-dependency-path: package-lock.json
+
+      - run: npm ci
+
+      - run: npm run format -- --check
+
+      - run: npm run lint
+
+      - run: npm run type-check
+
+      - run: npm test
+
+      - run: npm run build
+
+      - run: npm run generate && npm run fix
+
+      - name: Check for generated output drift
+        run: |
+          if ! git diff --quiet src/client; then
+            echo "::error::Generated SDK output is out of sync with spec. Run 'npm run generate && npm run fix' and commit."
+            git diff --stat src/client
+            exit 1
+          fi
+
+      - name: Pack SDK tarball
+        run: npm pack
+
+      - name: Install tarball in smoke test
+        run: cd smoke-test && npm install ../bradford-tech-mouser-sdk-*.tgz
+
+      - name: Smoke test (runtime)
+        run: cd smoke-test && node test.mjs
+
+      - name: Smoke test (types)
+        run: cd smoke-test && npx tsc --noEmit
