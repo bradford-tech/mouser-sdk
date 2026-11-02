@@ -17,8 +17,9 @@ export default defineConfig({
     ],
   },
   parser: {
-    // Validate the input spec before generation — catches spec issues early
-    // when the Mouser spec is updated.
+    // Validate the input spec before generation. `true` means "warn": issues
+    // are logged (visible in the update-spec run) but don't fail generation,
+    // so a cosmetic upstream spec problem can't block a regeneration.
     validate_EXPERIMENTAL: true,
     // Mouser-specific fixes (v1 paths, auth schemes, operation names).
     patch: { input: patchMouserSpec },
@@ -34,19 +35,16 @@ export default defineConfig({
       name: "@hey-api/client-fetch",
       runtimeConfigPath: "./src/hey-api.js",
     },
+    // No @hey-api/transformers: responses are returned as parsed JSON.
+    // - date-time values stay strings: Mouser sends offset-less calendar dates
+    //   ("2026-11-06T00:00:00"), which `new Date()` would read as host-local
+    //   time and shift when re-serialized.
+    // - int64 stays number: Mouser's only int64s are manufacturerId values,
+    //   well within Number.MAX_SAFE_INTEGER.
     "@hey-api/typescript",
-    {
-      name: "@hey-api/transformers",
-      bigInt: false, // int64 stays as number — Mouser's only int64s are manufacturerId values, well within Number.MAX_SAFE_INTEGER
-      // Keep date-time values as strings: Mouser sends offset-less calendar
-      // dates ("2026-11-06T00:00:00"), which `new Date()` would read as
-      // host-local time and shift when re-serialized.
-      dates: false,
-    },
     {
       name: "@hey-api/sdk",
       auth: true,
-      transformer: true, // wire transformers into SDK response pipeline
       operations: {
         strategy: "flat",
       },
