@@ -18,9 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: lts/*
           cache: npm
@@ -48,15 +48,15 @@ jobs:
         continue-on-error: true
         run: npx -y @redocly/cli@2.28.1 lint spec/openapi.json --extends=spec --format=github-actions
 
-      # Fails when Mouser adds an operation with no SDK name in
+      # Fails e.g. when Mouser adds an operation with no SDK name in
       # openapi-ts.patch.ts. The PR is still opened (with the spec changes and
-      # the error) so the new operation gets named.
+      # the error) so the problem gets fixed.
       - name: Regenerate client from updated spec
         id: generate
         continue-on-error: true
         run: |
-          npm run generate 2> "$RUNNER_TEMP/generate-error.log"
-          npm run fix
+          set -o pipefail
+          npm run generate 2>&1 | tee "$RUNNER_TEMP/generate.log"
 
       - name: Restore client after failed generation
         if: steps.generate.outcome == 'failure'
@@ -64,10 +64,20 @@ jobs:
           git checkout -- src/client
           git clean -fd src/client
 
+      # Formatting / type-check of a successfully generated client. A failure
+      # here keeps the regenerated client in the PR for a human to finish.
+      - name: Format and type-check generated client
+        id: fix
+        if: steps.generate.outcome == 'success'
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run fix 2>&1 | tee "$RUNNER_TEMP/fix.log"
+
       - name: Generate API changelog
         id: changelog
         if: steps.snapshot.outputs.has_previous == 'true'
-        uses: oasdiff/oasdiff-action/changelog@514e22ec2f1d1654fb78ac3bb7dc00d8f3c6c4d9 # v0.1.19
+        uses: oasdiff/oasdiff-action/changelog@9e56cf8b3aff7edb326d5767d3d23f96127e20c3 # v0.1.21
         with:
           base: .previous-spec.json
           revision: spec/openapi.json
@@ -80,7 +90,7 @@ jobs:
       - name: Detect breaking changes
         id: breaking
         if: steps.snapshot.outputs.has_previous == 'true'
-        uses: oasdiff/oasdiff-action/breaking@514e22ec2f1d1654fb78ac3bb7dc00d8f3c6c4d9 # v0.1.19
+        uses: oasdiff/oasdiff-action/breaking@9e56cf8b3aff7edb326d5767d3d23f96127e20c3 # v0.1.21
         with:
           base: .previous-spec.json
           revision: spec/openapi.json
@@ -94,7 +104,12 @@ jobs:
           BREAKING: ${{ steps.breaking.outputs.breaking }}
           LINT_OUTCOME: ${{ steps.lint.outcome }}
           GENERATE_OUTCOME: ${{ steps.generate.outcome }}
+          FIX_OUTCOME: ${{ steps.fix.outcome }}
         run: |
+          NEEDS_RENAME=false
+          if [ "$GENERATE_OUTCOME" = "failure" ] && grep -q 'Unknown Mouser operationId' "$RUNNER_TEMP/generate.log"; then
+            NEEDS_RENAME=true
+          fi
           # shellcheck disable=SC2016 # backticks below are literal Markdown
           {
             echo 'PR_BODY<<EOF_9f3a7b2c'
@@ -102,16 +117,33 @@ jobs:
               echo '## ❌ SDK generation failed'
               echo ''
               echo 'This PR contains only the spec changes; `src/client` was not regenerated.'
-              echo 'Add the new operation to `OPERATION_NAMES` in `openapi-ts.patch.ts`, then run `npm run generate && npm run fix` and commit.'
+              if [ "$NEEDS_RENAME" = "true" ]; then
+                echo 'Add the new operation to `OPERATION_NAMES` in `openapi-ts.patch.ts`, then run `npm run generate && npm run fix` and commit.'
+              else
+                echo 'Fix the error below, then run `npm run generate && npm run fix` and commit.'
+              fi
               echo ''
               echo '```'
-              tail -n 40 "$RUNNER_TEMP/generate-error.log"
+              tail -n 40 "$RUNNER_TEMP/generate.log"
+              echo '```'
+              echo ''
+            elif [ "$FIX_OUTCOME" = "failure" ]; then
+              echo '## ⚠️ Format / type-check failed'
+              echo ''
+              echo 'The client in `src/client` was regenerated, but `npm run fix` failed. Fix the error below and commit.'
+              echo ''
+              echo '```'
+              tail -n 40 "$RUNNER_TEMP/fix.log"
               echo '```'
               echo ''
             fi
             echo 'The upstream Mouser API OpenAPI specifications have changed.'
             echo ''
-            echo 'This PR updates `spec/` (V1 and V2 converted to OpenAPI 3.0, merged into `spec/openapi.json`) and regenerates the client in `src/client`.'
+            if [ "$GENERATE_OUTCOME" = "failure" ]; then
+              echo 'This PR updates `spec/` (V1 and V2 converted to OpenAPI 3.0, merged into `spec/openapi.json`).'
+            else
+              echo 'This PR updates `spec/` (V1 and V2 converted to OpenAPI 3.0, merged into `spec/openapi.json`) and regenerates the client in `src/client`.'
+            fi
             echo ''
             if [ "$LINT_OUTCOME" = "success" ]; then
               echo '**Spec validation:** Passed'
@@ -141,12 +173,12 @@ jobs:
             echo 'PR_LABELS<<LABELS_EOF'
             echo 'automated'
             if [ -n "$BREAKING" ]; then echo 'breaking-change'; fi
-            if [ "$GENERATE_OUTCOME" = "failure" ]; then echo 'needs-rename'; fi
+            if [ "$NEEDS_RENAME" = "true" ]; then echo 'needs-rename'; fi
             echo 'LABELS_EOF'
           } >> "$GITHUB_ENV"
 
       - name: Create pull request
-        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
           commit-message: "fix(spec): update Mouser OpenAPI spec"
           title: "fix(spec): update Mouser OpenAPI spec"
