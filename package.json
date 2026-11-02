@@ -40,6 +40,7 @@
     "format": "prettier . --log-level warn",
     "generate": "rimraf ./src/client && openapi-ts",
     "lint": "eslint . --quiet --max-warnings 0",
+    "live-check": "node --env-file=.env scripts/live-check.mjs",
     "prepack": "npm run build",
     "spec:update": "swagger2openapi https://api.mouser.com/api/docs/V1 -o spec/v1.json && swagger2openapi https://api.mouser.com/api/docs/V2 -o spec/v2.json && openapi-merge-cli --config spec/openapi-merge.json",
     "test": "node --import jiti/register --test test/*.test.ts",
