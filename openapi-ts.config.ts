@@ -38,7 +38,10 @@ export default defineConfig({
     {
       name: "@hey-api/transformers",
       bigInt: false, // int64 stays as number — Mouser's only int64s are manufacturerId values, well within Number.MAX_SAFE_INTEGER
-      dates: true, // convert date-time strings to Date objects
+      // Keep date-time values as strings: Mouser sends offset-less calendar
+      // dates ("2026-11-06T00:00:00"), which `new Date()` would read as
+      // host-local time and shift when re-serialized.
+      dates: false,
     },
     {
       name: "@hey-api/sdk",

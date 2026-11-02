@@ -13,6 +13,25 @@ test("exports every renamed operation as a function", () => {
   }
 });
 
+// Mouser sends calendar dates without an offset ("2026-11-06T00:00:00");
+// turning them into Date objects would read them as host-local time and shift
+// them on re-serialization, so they must come back exactly as sent.
+test("returns Mouser date strings unchanged", async () => {
+  const { fetch } = captureFetch({
+    SearchResults: {
+      Parts: [{ AvailabilityOnOrder: [{ Date: "2026-11-06T00:00:00" }] }],
+    },
+  });
+  const { data } = await sdk.searchByKeyword({
+    fetch,
+    body: { SearchByKeywordRequest: { keyword: "x" } },
+  });
+  assert.equal(
+    data?.SearchResults?.Parts?.[0]?.AvailabilityOnOrder?.[0]?.Date,
+    "2026-11-06T00:00:00",
+  );
+});
+
 test("sends each operation's key on the pinned v1 path", async () => {
   const { fetch, requests } = captureFetch();
   const client = createClient(

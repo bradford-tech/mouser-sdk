@@ -8,16 +8,6 @@ import type {
   RequestResult,
   TDataShape,
 } from "./client/index.js";
-import {
-  getOrderHistoryByDateFilterResponseTransformer,
-  getOrderHistoryByDateRangeResponseTransformer,
-  getOrderHistoryBySalesOrderNumberResponseTransformer,
-  getOrderHistoryByWebOrderNumberResponseTransformer,
-  searchByKeywordAndManufacturerResponseTransformer,
-  searchByKeywordResponseTransformer,
-  searchByPartNumberAndManufacturerResponseTransformer,
-  searchByPartNumberResponseTransformer,
-} from "./transformers.gen.js";
 import type {
   AddCartItemsData,
   AddCartItemsResponses,
@@ -296,7 +286,6 @@ export const getOrderHistoryByDateFilter = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: getOrderHistoryByDateFilterResponseTransformer,
     security: [
       {
         key: "orderApiKey",
@@ -322,7 +311,6 @@ export const getOrderHistoryByDateRange = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: getOrderHistoryByDateRangeResponseTransformer,
     security: [
       {
         key: "orderApiKey",
@@ -352,7 +340,6 @@ export const getOrderHistoryBySalesOrderNumber = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: getOrderHistoryBySalesOrderNumberResponseTransformer,
     security: [
       {
         key: "orderApiKey",
@@ -382,7 +369,6 @@ export const getOrderHistoryByWebOrderNumber = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: getOrderHistoryByWebOrderNumberResponseTransformer,
     security: [
       {
         key: "orderApiKey",
@@ -569,7 +555,6 @@ export const searchByKeyword = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
-    responseTransformer: searchByKeywordResponseTransformer,
     security: [
       {
         key: "searchApiKey",
@@ -597,7 +582,6 @@ export const searchByPartNumber = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
-    responseTransformer: searchByPartNumberResponseTransformer,
     security: [
       {
         key: "searchApiKey",
@@ -631,7 +615,6 @@ export const searchByKeywordAndManufacturer = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: searchByKeywordAndManufacturerResponseTransformer,
     security: [
       {
         key: "searchApiKey",
@@ -665,7 +648,6 @@ export const searchByPartNumberAndManufacturer = <
     unknown,
     ThrowOnError
   >({
-    responseTransformer: searchByPartNumberAndManufacturerResponseTransformer,
     security: [
       {
         key: "searchApiKey",

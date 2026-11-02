@@ -31,7 +31,7 @@ const { data } = await searchByKeyword({
 console.log(data?.SearchResults?.Parts?.[0]?.MouserPartNumber);
 ```
 
-Every operation returns `{ data, error, response }` — `data` is the typed response body, `error` is the typed error body on a non-2xx status, and `response` is the raw `Response`. Pass `{ throwOnError: true }` to throw instead. Mouser also reports problems in an `Errors` array inside `data`, so check both.
+Every operation returns `{ data, error, response }` — `data` is the typed response body, `error` is the typed error body on a non-2xx status, and `response` is the raw `Response`. Pass `{ throwOnError: true }` to throw instead. Mouser also reports problems in an `Errors` array inside `data`, so check both. Date-time fields are returned as Mouser sends them — offset-less strings such as `"2026-11-06T00:00:00"` — rather than `Date` objects, because Mouser does not say which timezone they are in.
 
 ## Authentication
 

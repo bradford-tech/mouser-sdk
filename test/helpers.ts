@@ -1,12 +1,16 @@
 /**
- * A `fetch` stand-in that records each request and answers `{}`, so tests can
- * assert on the exact URL (and `apiKey`) the SDK sends without network access.
+ * A `fetch` stand-in that records each request and answers with `body` (JSON),
+ * so tests can assert on the exact URL (and `apiKey`) the SDK sends, and on how
+ * it hands back a response, without network access.
  */
-export function captureFetch(): { fetch: typeof fetch; requests: Request[] } {
+export function captureFetch(body: unknown = {}): {
+  fetch: typeof fetch;
+  requests: Request[];
+} {
   const requests: Request[] = [];
   const fetchStub = (async (input: RequestInfo | URL, init?: RequestInit) => {
     requests.push(new Request(input, init));
-    return new Response("{}", {
+    return new Response(JSON.stringify(body), {
       headers: { "Content-Type": "application/json" },
     });
   }) as typeof fetch;

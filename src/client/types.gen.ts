@@ -93,7 +93,7 @@ export type OrderHistoryResponseRoot = {
 };
 
 export type OrderHistoryBaseObject = {
-  DateCreated?: Date;
+  DateCreated?: string;
   SalesOrderNumber?: string;
   WebOrderNumber?: string;
   PoNumber?: string;
@@ -107,7 +107,7 @@ export type OrderDetail = {
   WebOrderId?: number;
   OrderStatus?: number;
   OrderStatusName?: string;
-  OrderDate?: Date;
+  OrderDate?: string;
   BillingAddress?: AddressModel;
   ShippingAddress?: AddressModel;
   PaymentDetail?: PaymentModel;
@@ -174,7 +174,7 @@ export type OrderLineProduct = {
 
 export type OrderLineActivity = {
   InvoiceNumber?: number;
-  Date?: Date;
+  Date?: string;
 };
 
 export type TrackingModel = {
@@ -577,7 +577,7 @@ export type StandardCost = {
 
 export type AvailabilityOnOrderObject = {
   Quantity?: number;
-  Date?: Date;
+  Date?: string;
 };
 
 export type SurchargeMessages = {

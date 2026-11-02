@@ -17,16 +17,17 @@ assert.deepEqual(search.data?.Errors ?? [], []);
 const parts = search.data?.SearchResults?.Parts ?? [];
 assert.ok(parts.length > 0, "expected at least one part for LM358");
 
-// `dates: true` turns date-time fields into Date objects; make sure Mouser's
-// strings actually parse.
+// Date-time fields are passed through as Mouser's own strings (`dates: false`
+// in openapi-ts.config.ts); make sure they still look like the offset-less
+// calendar dates that decision is based on.
 const onOrderDates = parts.flatMap((p) =>
   (p.AvailabilityOnOrder ?? []).map((a) => a.Date).filter(Boolean),
 );
 for (const date of onOrderDates) {
-  assert.ok(date instanceof Date && !Number.isNaN(date.getTime()), `${date}`);
+  assert.match(date, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/);
 }
 console.log(
-  `Search: ${parts.length} parts, ${onOrderDates.length} on-order dates parsed.`,
+  `Search: ${parts.length} parts, ${onOrderDates.length} on-order dates checked.`,
 );
 
 const currencies = await getCurrencies({});
