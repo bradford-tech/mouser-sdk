@@ -3086,6 +3086,16 @@
           "LanguageCode": {
             "type": "string"
           },
+          "EInvoicing": {
+            "items": {
+              "$ref": "#/components/schemas/EInvoicingRequest"
+            },
+            "xml": {
+              "name": "EInvoicingRequest",
+              "wrapped": true
+            },
+            "type": "array"
+          },
           "SubmitOrder": {
             "type": "boolean",
             "default": false
@@ -3177,6 +3187,20 @@
         },
         "type": "object"
       },
+      "EInvoicingRequest": {
+        "properties": {
+          "Key": {
+            "type": "string"
+          },
+          "Value": {
+            "type": "string"
+          }
+        },
+        "xml": {
+          "name": "EInvoicingRequest"
+        },
+        "type": "object"
+      },
       "OrderRoot": {
         "properties": {
           "Order": {
@@ -3248,6 +3272,16 @@
           },
           "LanguageCode": {
             "type": "string"
+          },
+          "EInvoicing": {
+            "items": {
+              "$ref": "#/components/schemas/EInvoicingResponse"
+            },
+            "xml": {
+              "name": "EInvoicingResponse",
+              "wrapped": true
+            },
+            "type": "array"
           },
           "Errors": {
             "items": {
@@ -3331,6 +3365,30 @@
         },
         "xml": {
           "name": "OrderPayment"
+        },
+        "type": "object"
+      },
+      "EInvoicingResponse": {
+        "properties": {
+          "Key": {
+            "type": "string"
+          },
+          "Value": {
+            "type": "string"
+          },
+          "Errors": {
+            "items": {
+              "$ref": "#/components/schemas/ErrorEntity"
+            },
+            "xml": {
+              "name": "ErrorEntity",
+              "wrapped": true
+            },
+            "type": "array"
+          }
+        },
+        "xml": {
+          "name": "EInvoicingResponse"
         },
         "type": "object"
       },
@@ -3640,6 +3698,10 @@
           },
           "Price": {
             "type": "string"
+          },
+          "RawPrice": {
+            "type": "number",
+            "format": "double"
           },
           "Currency": {
             "type": "string"

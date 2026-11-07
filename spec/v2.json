@@ -570,6 +570,10 @@
                     "Price": {
                         "type": "string"
                     },
+                    "RawPrice": {
+                        "type": "number",
+                        "format": "double"
+                    },
                     "Currency": {
                         "type": "string"
                     }

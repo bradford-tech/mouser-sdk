@@ -386,6 +386,7 @@ export type OrderRequestType = {
   CurrencyCode: string;
   CartKey: string;
   LanguageCode?: string;
+  EInvoicing?: Array<EInvoicingRequest>;
   SubmitOrder?: boolean;
 };
 
@@ -417,6 +418,11 @@ export type PaymentTypeRequest = {
   VatNumberValidForEuShipments?: boolean;
 };
 
+export type EInvoicingRequest = {
+  Key?: string;
+  Value?: string;
+};
+
 export type OrderRoot = {
   Order?: Order;
 };
@@ -438,6 +444,7 @@ export type Order = {
   TaxCertificateId?: string;
   IECCode?: string;
   LanguageCode?: string;
+  EInvoicing?: Array<EInvoicingResponse>;
   Errors?: Array<ErrorEntity>;
   SubmitOrder?: boolean;
 };
@@ -461,6 +468,12 @@ export type OrderPayment = {
   Name?: string;
   VatAccountNumber?: string;
   VatInvoiceAddress?: OrderAddressType;
+};
+
+export type EInvoicingResponse = {
+  Key?: string;
+  Value?: string;
+  Errors?: Array<ErrorEntity>;
 };
 
 export type SearchByKeywordRequestRoot = {
@@ -560,6 +573,7 @@ export type ProductAttribute = {
 export type Pricebreak = {
   Quantity?: number;
   Price?: string;
+  RawPrice?: number;
   Currency?: string;
 };
 
