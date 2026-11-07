@@ -59,6 +59,8 @@ export type {
   DeleteAllScheduledCartItemsResponse,
   DeleteAllScheduledCartItemsResponses,
   DeliveryModel,
+  EInvoicingRequest,
+  EInvoicingResponse,
   ErrorEntity,
   FreightAccount,
   GetCartData,
