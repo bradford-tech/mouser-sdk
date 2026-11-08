@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.3](https://github.com/bradford-tech/mouser-sdk/compare/mouser-sdk-v0.0.2...mouser-sdk-v0.0.3) (2026-11-08)
+
+
+### Features
+
+* add EInvoicing to orders and RawPrice to search price breaks ([c6004c9](https://github.com/bradford-tech/mouser-sdk/commit/c6004c962508c26df8ebcdcf1ee7b6a924e056a0))
+
 ## [0.0.2](https://github.com/bradford-tech/mouser-sdk/compare/mouser-sdk-v0.0.1...mouser-sdk-v0.0.2) (2026-11-03)
 
 
