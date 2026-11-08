@@ -1,6 +1,6 @@
 {
   "name": "@bradford-tech/mouser-sdk",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "TypeScript SDK for the Mouser Electronics API",
   "keywords": [
     "mouser",
